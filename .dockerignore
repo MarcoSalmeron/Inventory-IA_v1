@@ -1,0 +1,22 @@
+# Entorno virtual — lo más importante
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Secrets
+.env
+*.pem
+
+# Git
+.git/
+.gitignore
+
+# VS Code
+.vscode/

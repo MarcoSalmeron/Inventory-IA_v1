@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-agent-api
+  namespace: chat-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-agent
+  template:
+    metadata:
+      labels:
+        app: chat-agent
+    spec:
+      containers:
+        - name: fastapi
+          image: chat-agent-api:latest        # local Docker Desktop
+          imagePullPolicy: Never               # usa imagen local, no busca en registry
+          ports:
+            - containerPort:8000
+          envFrom: 
+            - secretRef:
+                name: agent-secrets            # viene de tu .env
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-agent-svc
+  namespace: chat-agent
+spec:
+  selector:
+    app: chat-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: LoadBalancer #NodePort
