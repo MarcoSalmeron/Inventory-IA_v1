@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from agent_services.app.api.routes import router
-from api import get_business_units, get_organizations
+#from agent_services.app.api.routes import router
+from agent_services.app.api.v1.business_units import get_business_units
+from agent_services.app.api.v1.organizations import get_organizations
+
 
 
 services = FastAPI(
@@ -15,7 +17,7 @@ services = FastAPI(
 
 services.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])
 # Incluir rutas de la API
-services.include_router(router)
+#services.include_router(router)
 
 
 @services.get("/")
