@@ -1,9 +1,12 @@
 import os  
 from cryptography.fernet import Fernet  
 from agent_services.app.core.db_conn import get_conn  
+from dotenv import load_dotenv  
+  
+load_dotenv(override=True, verbose=True)
   
 FERNET_KEY = os.getenv("FERNET_KEY")
-fernet = Fernet(FERNET_KEY.encode())  
+fernet = Fernet(FERNET_KEY.encode())
   
   
 def _encrypt(value: str) -> str:  
