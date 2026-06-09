@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  inventory_ia:
+    image: pgvector/pgvector:pg16
+    container_name: inventory_ia
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SalRam021
+      POSTGRES_DB: inventory_ia
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data

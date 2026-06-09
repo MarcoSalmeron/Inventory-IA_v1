@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Request, HTTPException
-from agent_services.app.models.schemas import  CredentialCreate
-from agent_services.app.core.credentials_service import save_credential, get_credential
+from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate
+from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
 import pandas as pd
@@ -9,7 +9,7 @@ import pandas as pd
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
 @router.get("/business-units")
-def get_business_units():
+def fetch_business_units():
     try:
         df = get_business_units()
         print(df)
@@ -18,16 +18,24 @@ def get_business_units():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/organizations")
-def get_organizations():
+def fetch_organizations():
     df = get_organizations()
     return df.to_json(orient="records")
 
-# --- Credentials endpoints ---  
-  
+# ############################# #
+# --- Credentials Endpoints --- # 
+# ############################# #
+
 @router.post("/credentials")  
 def create_credential(body: CredentialCreate):  
     return save_credential(**body.model_dump())  
-  
+
+@router.put("/credentials/{credential_name}")  
+def edit_credential(credential_name: str, body: CredentialUpdate):  
+    result = update_credential(credential_name, **body.model_dump())  
+    if result is None:  
+        raise HTTPException(status_code=404, detail="Credencial no encontrada")  
+    return result  
   
 @router.get("/credentials/{credential_name}")  
 def fetch_credential(credential_name: str):  
@@ -35,3 +43,17 @@ def fetch_credential(credential_name: str):
     if not creds:  
         raise HTTPException(status_code=404, detail="Credencial no encontrada")  
     return creds  
+
+@router.delete("/credentials/{credential_name}")  
+def remove_credential(credential_name: str):  
+    result = delete_credential(credential_name)  
+    if result is None:  
+        raise HTTPException(status_code=404, detail="Credencial no encontrada")  
+    return result
+
+@router.put("/credentials/activate/{credential_name}")  
+def add_credential(credential_name: str):
+    result = activate_credential(credential_name)
+    if result is None:  
+        raise HTTPException(status_code=404, detail="Credencial no encontrada")  
+    return result  

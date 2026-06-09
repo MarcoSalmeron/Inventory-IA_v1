@@ -16,3 +16,15 @@ class CredentialCreate(BaseModel):
     attribute3: Optional[str] = None  
     attribute4: Optional[str] = None  
     attribute5: Optional[str] = None
+
+class CredentialUpdate(BaseModel):  
+    host: Optional[str] = None  
+    username: Optional[str] = None  
+    user_password: Optional[str] = None  
+    estatus: Optional[str] = None  
+    updated_by: Optional[str] = None  
+    attribute1: Optional[str] = None  
+    attribute2: Optional[str] = None  
+    attribute3: Optional[str] = None  
+    attribute4: Optional[str] = None  
+    attribute5: Optional[str] = None
