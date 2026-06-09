@@ -3,24 +3,28 @@ from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdat
 from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
-import pandas as pd
-
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
-@router.get("/business-units")
-def fetch_business_units():
+# ############################# #
+# --- Services Endpoints --- # 
+# ############################# #
+
+@router.get("/business-units/{credential_name}")
+def fetch_business_units(credential_name: str):
     try:
-        df = get_business_units()
-        print(df)
+        df = get_business_units(credential_name)
         return df.to_json(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/organizations")
-def fetch_organizations():
-    df = get_organizations()
-    return df.to_json(orient="records")
+@router.get("/organizations/{credential_name}")
+def fetch_organizations(credential_name: str):
+    try:
+        df = get_organizations(credential_name)
+        return df.to_json(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ############################# #
 # --- Credentials Endpoints --- # 
