@@ -9,7 +9,7 @@ def get_business_units(credential_name : str):
         api = get_rest_endpoint('business-units')
         credential = get_credential(credential_name)
         response = requests.get(api['uri'], auth=(
-            credential["username"], 
+            credential["host"], 
             credential["user_password"]
             ))
         data = response.json()

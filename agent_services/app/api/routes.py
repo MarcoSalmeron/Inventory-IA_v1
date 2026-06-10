@@ -18,10 +18,10 @@ def fetch_business_units(credential_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/organizations/{credential_name}")
-def fetch_organizations(credential_name: str):
+@router.get("/organizations/{credential_name}/{management_business_unit_id}")
+def fetch_organizations(credential_name: str, management_business_unit_id: str = None):
     try:
-        df = get_organizations(credential_name)
+        df = get_organizations(credential_name, management_business_unit_id)
         return df.to_json(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
