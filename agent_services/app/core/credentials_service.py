@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
   
 try:
-    FERNET_KEY = os.environ.get("FERNET_KEY")
+    FERNET_KEY = os.getenv("FERNET_KEY")
 
     if FERNET_KEY:
         print("Fernet Key encontrada")
@@ -163,3 +163,53 @@ def activate_credential(credential_name: str) -> dict | None:
     if activated == 0:  
         return None  
     return {"message": f"Credencial '{credential_name}' activada correctamente"}
+
+def get_rest_endpoint(endpoint_name: str) -> dict | None:
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+        """
+            SELECT 
+                api_name,
+                description,
+                uri,
+                estatus,
+                created_by,
+                created_at,
+                updated_by,
+                is_active,
+                attribute1,
+                attribute2,
+                attribute3,
+                attribute4,
+                attribute5
+            FROM OFC_REST_API
+            WHERE LOWER(api_name) = %s
+            AND is_active = TRUE
+            LIMIT 1
+        """,
+        (endpoint_name.strip().lower(),)
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row:
+            return None
+        return {
+            "api_name":    row[0],
+            "description": row[1],
+            "uri":         row[2],
+            "estatus":     row[3],
+            "created_by":  row[4],
+            "created_at":  str(row[5]),
+            "updated_by":  row[6],
+            "is_active":   row[7],
+            "attribute1":  row[8],
+            "attribute2":  row[9],
+            "attribute3":  row[10],
+            "attribute4":  row[11],
+            "attribute5":  row[12]
+        }
+    except Exception as ex:
+        raise ex

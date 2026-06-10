@@ -1,4 +1,3 @@
-
 import psycopg2
 
 # Conectar a la base de datos

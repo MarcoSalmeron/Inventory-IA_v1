@@ -1,14 +1,14 @@
 import pandas as pd
 import requests
 from pprint import pprint
-from agent_services.app.core.credentials_service import get_credential
+from agent_services.app.core.credentials_service import get_credential, get_rest_endpoint
 
 def get_business_units(credential_name : str):
     try:
         
-        endpoint = "https://enev-test.fa.us2.oraclecloud.com/fscmRestApi/resources/11.13.18.05/finBusinessUnitsLOV?onlyData=true"
+        api = get_rest_endpoint('business-units')
         credential = get_credential(credential_name)
-        response = requests.get(endpoint, auth=(
+        response = requests.get(api['uri'], auth=(
             credential["username"], 
             credential["user_password"]
             ))
