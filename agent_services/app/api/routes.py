@@ -1,14 +1,15 @@
 from fastapi import APIRouter,Request, HTTPException
 from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate
 from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential
+from agent_services.app.core.soap_service import run_bulk_export  
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
-# ############################# #
-# --- Services Endpoints --- # 
-# ############################# #
+# ################################# #
+# --- Oracle API REST Endpoints --- # 
+# ################################# #
 
 @router.get("/business-units/{credential_name}")
 def fetch_business_units(credential_name: str):
@@ -61,3 +62,16 @@ def add_credential(credential_name: str):
     if result is None:  
         raise HTTPException(status_code=404, detail="Credencial no encontrada")  
     return result  
+
+# ##################### #
+# --- SOAP Services --- # 
+# ##################### #
+
+@router.post("/bulk-export/{credential_name}")  
+def trigger_bulk_export(credential_name: str, request: Request):  
+    try:  
+        body = request.json()  # parámetros del envelope (content, file_name, etc.)  
+        zip_path = run_bulk_export(credential_name, **body)  
+        return {"message": "Exportación completada", "zip_path": str(zip_path)}  
+    except Exception as e:  
+        raise HTTPException(status_code=500, detail=str(e))
