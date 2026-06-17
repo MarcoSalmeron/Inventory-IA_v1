@@ -6,7 +6,32 @@ import xml.etree.ElementTree as ET
 from pathlib import Path  
 from agent_services.app.core.credentials_service import get_credential, get_rest_endpoint  
 from requests_toolbelt.multipart import decoder
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+try:
+    print(f'\n{"#"*30}\n---- SOAP SERVICE ----\n{"#"*30}\n')
+
+    DOWNLOAD_DIR = Path(os.getenv("SOAP_DOWNLOAD_DIR", "downloads"))  
+
+    if DOWNLOAD_DIR:
+        print(f"\n{'='*30}\n-- Directorio de descarga encontrado --\n{'='*30}\n")
+        print(f"Directorio de descarga: {DOWNLOAD_DIR.resolve()}")
+    else:
+        raise Exception("Directorio de descarga no encontrado")
   
+    api = get_rest_endpoint('soap-erp-integration')
+    
+    if api:
+        print(f"\n{'='*30}\n-- URI HTTP para SOAP encontrado --\n{'='*30}\n")
+        print(f"URI: {api['uri']}\n\n")
+    else:
+        raise Exception("HTTP para SOAP no encontrado")
+        
+except Exception as ex:
+    raise ex
+
 # namespaces del SoapUI project  
 NS = {
     'env': 'http://schemas.xmlsoap.org/soap/envelope/',
@@ -18,8 +43,7 @@ NS = {
     'xop': 'http://www.w3.org/2004/08/xop/include',
 }
 
-# Directorio a guardar el Zip 
-DOWNLOAD_DIR = Path(os.getenv("SOAP_DOWNLOAD_DIR", "downloads"))  
+
   
 def _soap_headers(action: str) -> dict:  
     return {  
@@ -37,6 +61,8 @@ def _parse_xml(xml_str: str, xpath: str) -> str | None:
 # 1. exportBulkData → retorna requestId  
 # ─────────────────────────────────────────────  
 def export_bulk_data(credential_name: str, **kwargs) -> str:
+    print(f'\n{"="*30}\n-- iniciando exportBulkData --\n{"="*30}\n')
+
     api = get_rest_endpoint('soap-erp-integration')
     credential = get_credential(credential_name)
 
@@ -67,6 +93,9 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
 
     response.raise_for_status()
 
+    print(f"\n{'='*30}\n--exportBulkData Status Code--\n{'='*30}\n")
+    print(response.status_code)
+
     request_id = _parse_xml(
         response.text,
         f".//ns2:exportBulkDataResponse/{{{NS['ns2']}}}result"
@@ -74,6 +103,10 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
 
     if not request_id:
         raise ValueError(f"No se obtuvo requestId. Respuesta:\n{response.text}")
+    else:
+        print(f"\n{'='*30}\n--exportBulkData finalizado--\n{'='*30}\n")
+        print(f"requestId: {request_id}")
+
     return request_id
 
   
@@ -82,6 +115,8 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
 # 2. getESSJobStatus → WAIT | RUNNING | SUCCEEDED  
 # ─────────────────────────────────────────────  
 def get_ess_job_status(credential_name: str, request_id: str) -> str:
+    print(f'\n{"="*30}\n-- iniciando getESSJobStatus --\n{"="*30}\n')
+
     api = get_rest_endpoint('soap-erp-integration')
     credential = get_credential(credential_name)
 
@@ -103,9 +138,13 @@ def get_ess_job_status(credential_name: str, request_id: str) -> str:
         headers=_soap_headers(
             "http://xmlns.oracle.com/apps/financials/commonModules/shared/model/erpIntegrationService/ErpIntegrationService/getESSJobStatus"
         ),
-        auth=(credential['username'], credential['user_password']),
+        auth=(credential['host'], credential['user_password']),
     )
+
     response.raise_for_status()
+
+    print(f"\n{'='*30}\n--getESSJobStatus Status Code--\n{'='*30}\n")
+    print(response.status_code)
 
     status = _parse_xml(
         response.text,
@@ -114,6 +153,11 @@ def get_ess_job_status(credential_name: str, request_id: str) -> str:
 
     if not status:
         raise ValueError(f"No se obtuvo status. Respuesta:\n{response.text}")
+    else:
+        print(f"\n{'='*30}\n--getESSJobStatus finalizado--\n{'='*30}\n")
+        print(f"status: {status.upper()}")
+        print(f"requestId: {request_id}")
+
     return status.upper()
 
   
@@ -122,6 +166,8 @@ def get_ess_job_status(credential_name: str, request_id: str) -> str:
 # 3. downloadESSJobExecutionDetails → ZIP local  
 # ─────────────────────────────────────────────  
 def download_ess_job_execution_details(credential_name: str, request_id: str) -> Path:
+    print(f'\n{"="*30} \n-- iniciando downloadESSJobExecutionDetails (ZIP) --\n {"="*30}\n')
+
     api = get_rest_endpoint('soap-erp-integration')
     credential = get_credential(credential_name)
 
@@ -143,9 +189,12 @@ def download_ess_job_execution_details(credential_name: str, request_id: str) ->
         headers=_soap_headers(
             "http://xmlns.oracle.com/apps/financials/commonModules/shared/model/erpIntegrationService/ErpIntegrationService/downloadESSJobExecutionDetails"
         ),
-        auth=(credential['username'], credential['user_password']),
+        auth=(credential['host'], credential['user_password']),
     )
     response.raise_for_status()
+
+    print(f"\n{'='*30}\n--downloadESSJobExecutionDetails Status Code--\n{'='*30}\n")
+    print(response.status_code)
 
     content_type = response.headers.get('Content-Type', '')
     zip_bytes = None
@@ -207,6 +256,13 @@ def download_ess_job_execution_details(credential_name: str, request_id: str) ->
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
     output_path = DOWNLOAD_DIR / f"ess_job_{request_id}.zip"
     output_path.write_bytes(zip_bytes)
+
+    if output_path.exists():
+        print(f"\n{'='*30}\n-- downloadESSJobExecutionDetails finalizado --\n{'='*30}\n")
+        print(f"Archivo guardado en: {output_path.resolve()}")
+    else:
+        raise RuntimeError(f"No se pudo guardar el archivo en {output_path.resolve()}")
+    
     return output_path
   
   
@@ -226,11 +282,13 @@ def run_bulk_export(
       3. downloadESSJobExecutionDetails → ZIP guardado en DOWNLOAD_DIR  
     Retorna el Path del ZIP descargado.  
     """  
-    # Paso 1  
+    print(f'\n{"="*10} \n--run_bulk_export (ORQUESTADOR)--\n {"="*10}\n')
+
+    # Paso 1 - RequestID
     request_id = export_bulk_data(credential_name, **kwargs)  
     print(f"[SOAP] exportBulkData completado → requestId: {request_id}")  
   
-    # Paso 2 - polling  
+    # Paso 2 - Status  
     terminal_states = {'SUCCEEDED', 'ERROR', 'FAILED', 'CANCELLED', 'WARNING'}  
     for attempt in range(1, max_retries + 1):  
         status = get_ess_job_status(credential_name, request_id)  
@@ -245,7 +303,8 @@ def run_bulk_export(
     else:  
         raise TimeoutError(f"El job {request_id} no completó en {max_retries} intentos")  
   
-    # Paso 3  
+    # Paso 3 - ZIP
     zip_path = download_ess_job_execution_details(credential_name, request_id)  
     print(f"[SOAP] ZIP guardado en: {zip_path.resolve()}")  
+
     return zip_path

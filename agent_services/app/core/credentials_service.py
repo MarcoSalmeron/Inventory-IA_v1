@@ -6,10 +6,21 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
   
 try:
+    print(f'\n{"#"*30}\n---- CREDENTIALS SERVICE ----\n{"#"*30}\n')
+
+    conn = get_conn()
+
+    if conn:
+        print(f"\n{'='*30}\n-- Conexión a la BD exitosa --\n{'='*30}\n")
+    else:
+        raise Exception("Error al conectar a la base de datos")
+    
+    conn.close()
+    
     FERNET_KEY = os.getenv("FERNET_KEY")
 
     if FERNET_KEY:
-        print("Fernet Key encontrada")
+        print(f"\n{'='*30}\n-- Fernet Key encontrada --\n{'='*30}\n")
         print(f"Fernet Key: {FERNET_KEY[:5]}...")
     else:
         raise Exception("Fernet Key no encontrada")

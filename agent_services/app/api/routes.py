@@ -68,9 +68,9 @@ def add_credential(credential_name: str):
 # ##################### #
 
 @router.post("/bulk-export/{credential_name}")  
-def trigger_bulk_export(credential_name: str, request: Request):  
+async def trigger_bulk_export(credential_name: str, request: Request):  
     try:  
-        body = request.json()  # parámetros del envelope (content, file_name, etc.)  
+        body = await request.json()  # parámetros del envelope (content, file_name, etc.)  
         zip_path = run_bulk_export(credential_name, **body)  
         return {"message": "Exportación completada", "zip_path": str(zip_path)}  
     except Exception as e:  
