@@ -43,7 +43,22 @@ NS = {
     'xop': 'http://www.w3.org/2004/08/xop/include',
 }
 
-
+def _extraer_xml(response: requests.Response) -> str:
+    """Extraer XML del MTOM"""
+    content_type = response.headers.get('Content-Type', '')  
+    if 'multipart/related' in content_type:  
+        mp = decoder.MultipartDecoder(response.content, content_type)  
+        xml_str = None  
+        for part in mp.parts:  
+            headers = {k.decode().lower(): v.decode() for k, v in part.headers.items()}  
+            if 'xml' in headers.get('content-type', ''):  
+                xml_str = part.content.decode('utf-8')  
+                break  
+        if not xml_str:  
+            raise ValueError("No se encontró la parte XML en la respuesta MTOM.")  
+        return xml_str
+    else:  
+        return response.text
   
 def _soap_headers(action: str) -> dict:  
     return {  
@@ -97,7 +112,7 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
     print(response.status_code)
 
     request_id = _parse_xml(
-        response.text,
+        _extraer_xml(response),
         f".//ns2:exportBulkDataResponse/{{{NS['ns2']}}}result"
     )
 
@@ -147,7 +162,7 @@ def get_ess_job_status(credential_name: str, request_id: str) -> str:
     print(response.status_code)
 
     status = _parse_xml(
-        response.text,
+        _extraer_xml(response),
         f".//ns2:getESSJobStatusResponse/{{{NS['ns2']}}}result"
     )
 
@@ -245,7 +260,7 @@ def download_ess_job_execution_details(credential_name: str, request_id: str) ->
     else:
         # 2) Fallback: resultado en base64 dentro del XML
         b64_content = _parse_xml(
-            response.text,
+            _extraer_xml(response),
             f".//ns2:downloadESSJobExecutionDetailsResponse/{{{NS['ns2']}}}result"
         )
         if not b64_content:
@@ -272,7 +287,7 @@ def download_ess_job_execution_details(credential_name: str, request_id: str) ->
 def run_bulk_export(  
     credential_name: str,  
     poll_interval: int = 10,   # segundos entre cada consulta de status  
-    max_retries: int = 60,     # máximo de intentos antes de timeout  
+    max_retries: int = 10,     # máximo de intentos antes de timeout  
     **kwargs  
 ) -> Path:  
     """  
@@ -286,13 +301,13 @@ def run_bulk_export(
 
     # Paso 1 - RequestID
     request_id = export_bulk_data(credential_name, **kwargs)  
-    print(f"[SOAP] exportBulkData completado → requestId: {request_id}")  
+    print(f"\n[SOAP] exportBulkData completado → requestId: {request_id}\n")  
   
     # Paso 2 - Status  
     terminal_states = {'SUCCEEDED', 'ERROR', 'FAILED', 'CANCELLED', 'WARNING'}  
     for attempt in range(1, max_retries + 1):  
         status = get_ess_job_status(credential_name, request_id)  
-        print(f"[SOAP] getESSJobStatus → {status} (intento {attempt}/{max_retries})")  
+        print(f"\n[SOAP] getESSJobStatus → {status} (intento {attempt}/{max_retries})\n")  
   
         if status == 'SUCCEEDED':  
             break  
@@ -305,6 +320,6 @@ def run_bulk_export(
   
     # Paso 3 - ZIP
     zip_path = download_ess_job_execution_details(credential_name, request_id)  
-    print(f"[SOAP] ZIP guardado en: {zip_path.resolve()}")  
+    print(f"\n[SOAP] ZIP guardado en: {zip_path.resolve()}\n\n")  
 
     return zip_path

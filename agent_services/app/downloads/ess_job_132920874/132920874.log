@@ -1,0 +1,13 @@
+####[2026-06-17T08:39:28.293+00:00] [INFO] dummy file is deleted
+================ BIPJobExecutable Execution Started ============
+OutputFile : /u01/APPLTOP/instance/ess/rfd/132920874/out/132920874.xml
+Request ID: 132920874 ClassLoader is weblogic.utils.classloaders.GenericClassLoader@40e24003 finder: weblogic.utils.classloaders.CodeGenClassFinder@112ff709 annotation: ORA_FSCM_ESSAPP#V2.0.eoSWjRaKw-hmnKvIrFWAMRraCiwqFG3KII7CVCgn6Og@
+RequestId:132920874
+ReportID : /Integration/INV/Catalogos/ALL_REP_INV_ITEMS_EXTRACT.xdo
+Skip : Notify
+The bipJobID : 25525996
+bipJobID is updated to ESSRuntimeService
+BIP_STATUS_URL is added to ESSRuntimeService
+================ BIPJobExecutable is running in async mode. ============
+================ Please check the ess status for more detail info. ============
+
