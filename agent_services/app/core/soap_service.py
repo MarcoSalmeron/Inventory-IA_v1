@@ -4,7 +4,8 @@ import time
 import requests  
 import xml.etree.ElementTree as ET  
 from pathlib import Path  
-from agent_services.app.core.credentials_service import get_credential, get_rest_endpoint  
+from agent_services.app.core.credentials_service import find_credential, get_rest_endpoint, get_process_config
+from agent_services.app.api.v1.organizations import get_organizationId
 from requests_toolbelt.multipart import decoder
 from dotenv import load_dotenv
 
@@ -75,11 +76,14 @@ def _parse_xml(xml_str: str, xpath: str) -> str | None:
 # ─────────────────────────────────────────────  
 # 1. exportBulkData → retorna requestId  
 # ─────────────────────────────────────────────  
-def export_bulk_data(credential_name: str, **kwargs) -> str:
+def export_bulk_data(enterprise_id: int) -> str:
     print(f'\n{"="*30}\n-- iniciando exportBulkData --\n{"="*30}\n')
 
     api = get_rest_endpoint('soap-erp-integration')
-    credential = get_credential(credential_name)
+    credential = find_credential(enterprise_id)
+    config = get_process_config(enterprise_id)
+
+    organization_id = get_organizationId(enterprise_id)
 
     envelope = f"""
     <soapenv:Envelope
@@ -88,11 +92,11 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
    <soapenv:Header/>
    <soapenv:Body>
       <typ:exportBulkData>
-         <typ:jobName>{kwargs.get('job_name', '/oracle/apps/ess/custom/Integration/INV/Catalogos/,INT_JOB_ALL_INV_ITEMS_EXTRACT')}</typ:jobName>
-         <typ:parameterList>{kwargs.get('parameter_list', '')}</typ:parameterList>
-         <typ:jobOptions>{kwargs.get('job_options', 'ExtractFileType=ALL')}</typ:jobOptions>
-         <typ:callbackURL>{kwargs.get('callback_url', '')}</typ:callbackURL>
-         <typ:notificationCode>{kwargs.get('notification_code', '12')}</typ:notificationCode>
+         <typ:jobName>{config['process_code']}</typ:jobName>
+         <typ:parameterList>{organization_id}</typ:parameterList>
+         <typ:jobOptions>{config['attribute1']}</typ:jobOptions>
+         <typ:callbackURL></typ:callbackURL>
+         <typ:notificationCode>12</typ:notificationCode>
       </typ:exportBulkData>
     </soapenv:Body>
     </soapenv:Envelope>"""
@@ -129,11 +133,11 @@ def export_bulk_data(credential_name: str, **kwargs) -> str:
 # ─────────────────────────────────────────────  
 # 2. getESSJobStatus → WAIT | RUNNING | SUCCEEDED  
 # ─────────────────────────────────────────────  
-def get_ess_job_status(credential_name: str, request_id: str) -> str:
+def get_ess_job_status(enterprise_id: int, request_id: str) -> str:
     print(f'\n{"="*30}\n-- iniciando getESSJobStatus --\n{"="*30}\n')
 
     api = get_rest_endpoint('soap-erp-integration')
-    credential = get_credential(credential_name)
+    credential = find_credential(enterprise_id)
 
     envelope = f"""
     <soapenv:Envelope
@@ -180,11 +184,11 @@ def get_ess_job_status(credential_name: str, request_id: str) -> str:
 # ─────────────────────────────────────────────  
 # 3. downloadESSJobExecutionDetails → ZIP local  
 # ─────────────────────────────────────────────  
-def download_ess_job_execution_details(credential_name: str, request_id: str) -> Path:
+def download_ess_job_execution_details(enterprise_id: int, request_id: str) -> Path:
     print(f'\n{"="*30} \n-- iniciando downloadESSJobExecutionDetails (ZIP) --\n {"="*30}\n')
 
     api = get_rest_endpoint('soap-erp-integration')
-    credential = get_credential(credential_name)
+    credential = find_credential(enterprise_id)
 
     envelope = f"""
     <soapenv:Envelope
@@ -285,10 +289,9 @@ def download_ess_job_execution_details(credential_name: str, request_id: str) ->
 # Orquestador: flujo completo  
 # ─────────────────────────────────────────────  
 def run_bulk_export(  
-    credential_name: str,  
+    enterprise_id: int,  
     poll_interval: int = 10,   # segundos entre cada consulta de status  
     max_retries: int = 10,     # máximo de intentos antes de timeout  
-    **kwargs  
 ) -> Path:  
     """  
     Ejecuta el flujo completo:  
@@ -297,16 +300,16 @@ def run_bulk_export(
       3. downloadESSJobExecutionDetails → ZIP guardado en DOWNLOAD_DIR  
     Retorna el Path del ZIP descargado.  
     """  
-    print(f'\n{"="*10} \n--run_bulk_export (ORQUESTADOR)--\n {"="*10}\n')
+    print(f'\n{"="*30} \n--run_bulk_export (ORQUESTADOR)--\n {"="*30}\n')
 
     # Paso 1 - RequestID
-    request_id = export_bulk_data(credential_name, **kwargs)  
+    request_id = export_bulk_data(enterprise_id)  
     print(f"\n[SOAP] exportBulkData completado → requestId: {request_id}\n")  
   
     # Paso 2 - Status  
     terminal_states = {'SUCCEEDED', 'ERROR', 'FAILED', 'CANCELLED', 'WARNING'}  
     for attempt in range(1, max_retries + 1):  
-        status = get_ess_job_status(credential_name, request_id)  
+        status = get_ess_job_status(enterprise_id, request_id)  
         print(f"\n[SOAP] getESSJobStatus → {status} (intento {attempt}/{max_retries})\n")  
   
         if status == 'SUCCEEDED':  
@@ -319,7 +322,7 @@ def run_bulk_export(
         raise TimeoutError(f"El job {request_id} no completó en {max_retries} intentos")  
   
     # Paso 3 - ZIP
-    zip_path = download_ess_job_execution_details(credential_name, request_id)  
+    zip_path = download_ess_job_execution_details(enterprise_id, request_id)  
     print(f"\n[SOAP] ZIP guardado en: {zip_path.resolve()}\n\n")  
 
     return zip_path

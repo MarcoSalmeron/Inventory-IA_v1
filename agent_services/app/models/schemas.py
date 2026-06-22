@@ -28,3 +28,10 @@ class CredentialUpdate(BaseModel):
     attribute3: Optional[str] = None  
     attribute4: Optional[str] = None  
     attribute5: Optional[str] = None
+
+class ParameterConfig(BaseModel):
+    invOrganizationId: int
+
+class ProcessConfig(BaseModel):
+  processCode: str
+  parameters: ParameterConfig

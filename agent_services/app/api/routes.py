@@ -1,6 +1,6 @@
-from fastapi import APIRouter,Request, HTTPException
-from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate
-from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential
+from fastapi import APIRouter, HTTPException
+from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate, ProcessConfig
+from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential, save_process_config, get_process_config
 from agent_services.app.core.soap_service import run_bulk_export  
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
@@ -63,14 +63,25 @@ def add_credential(credential_name: str):
         raise HTTPException(status_code=404, detail="Credencial no encontrada")  
     return result  
 
+@router.post("/process-config")
+def create_process_config(body: ProcessConfig):
+    return save_process_config(
+        process_code=body.processCode,
+        inv_organization_id=body.parameters.invOrganizationId,
+    )
+
 # ##################### #
 # --- SOAP Services --- # 
 # ##################### #
 
-@router.post("/bulk-export/{credential_name}")  
-async def trigger_bulk_export(credential_name: str, request: Request):  
+@router.post("/{enterprise_id}/bulk-export")  
+async def trigger_bulk_export(enterprise_id: int):  
     try:  
-        zip_path = run_bulk_export(credential_name, **(await request.json()))
+        zip_path = run_bulk_export(enterprise_id)
         return {"message": "Exportación completada", "zip_path": str(zip_path)}  
     except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
+    
+# #################### #
+# --- RAG Services --- # 
+# #################### #
