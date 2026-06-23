@@ -1,8 +1,17 @@
 import psycopg2
+import os
+
+# Credenciales
+USER = os.getenv("POSTGRES_USER")
+PASSWORD = os.getenv("POSTGRES_PASSWORD")
+HOST = os.getenv("POSTGRES_HOST")
+PORT = os.getenv("POSTGRES_PORT")
+DB = os.getenv("POSTGRES_DB")
+CONN_STRING = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 
 # Conectar a la base de datos
 def get_conn():
-    return psycopg2.connect("postgresql://postgres:SalRam021@localhost:5432/inventory_ia")
+    return psycopg2.connect(CONN_STRING)
 
 # PRIMER PASO del Pipeline: Extraccion del inventario
 def create_analysis_run(request_id: str, status: str = "EXTRACTING"):  
