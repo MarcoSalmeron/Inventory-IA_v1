@@ -1,5 +1,8 @@
+from dotenv import load_dotenv
 import psycopg2
 import os
+
+load_dotenv(override=True)
 
 # Credenciales
 USER = os.getenv("POSTGRES_USER")
