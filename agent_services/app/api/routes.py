@@ -4,6 +4,7 @@ from agent_services.app.core.credentials_service import save_credential, get_cre
 from agent_services.app.core.soap_service import run_bulk_export  
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
+from agent_services.app.services.inventory_service import process_inventory_zip
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
@@ -77,8 +78,10 @@ def create_process_config(body: ProcessConfig):
 @router.post("/{enterprise_id}/bulk-export")  
 async def trigger_bulk_export(enterprise_id: int):  
     try:  
-        zip_path = run_bulk_export(enterprise_id)
-        return {"message": "Exportación completada", "zip_path": str(zip_path)}  
+        soap_result = run_bulk_export(enterprise_id)
+        job_id = get_process_config(enterprise_id)["enterprise_code"]
+        chunks = process_inventory_zip(soap_result["zip_path"], soap_result["request_id"], job_id)
+        return {"message": "Extraccion completada", "chunks": chunks}
     except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
     

@@ -21,53 +21,56 @@ def insert_inv_items_raw(request_id, job_id, source_file, csv_path):
                         request_id,
                         job_id,
                         source_file,
-                        row["P_INV_ORGANIZATION_ID"],
-                        row["INVENTORY_ITEM_ID"],
-                        row["ORGANIZATION_ID"],
-                        row["ORGANIZATION_CODE"],
-                        row["BUSINESS_UNIT_ID"],
-                        row["BUSINESS_UNIT_NAME"],
-                        row["LEGAL_ENTTITY_ID"],   # typo Oracle
-                        row["MASTER_ORG_ID"],
-                        row["ITEM_CLASS"],
-                        row["ITEM_NUMBER"],
-                        row["ITEM_DESCRIPTION"],
-                        None,                      # long_description (no viene en CSV)
-                        row["CATEGORY_NAME"],
-                        row["ITEM_STATUS"],
-                        row["ITEM_STATUS_NAME"],
-                        row["ITEM_STATUS_DESCRIPTION"],
-                        row["APPROVAL_STATUS"],
-                        row["PRIMARY_UOM_VAL"],
-                        None,                      # secondary_uom (no viene en CSV)
-                        row["DIMENSION_UOM"],
-                        row["WEIGHT_UOM"],
-                        row["VOLUME_UOM"],
-                        row["UNIT_WIDTH_QUANTITY"],
-                        row["UNIT_LENGTH_QUANTITY"],
-                        row["UNIT_HEIGHT_QUANTITY"],
-                        row["UNIT_WEIGTH_QUANTITY"], # typo Oracle
-                        row["UNIT_VOLUME_QUANTITY"],
-                        row["PRIMARY_TRANSACTION_QUANTITY"],
-                        row["INVENTORY_ITEM_FLAG"],
-                        row["STOCK_ENABLED_FLAG"],
-                        row["CUSTOMER_ORDER_FLAG"],
-                        row["CUSTOMER_ORDER_ENABLED_FLAG"],
-                        row["SHIPPABLE_FLAG"],
-                        row["INVOICED_FLAG"],
-                        row["PURCHASING_ITEM_FLAG"],
-                        row["PURCHASING_ENABLED_FLAG"],
-                        None,                      # purchasing_tax_code (no viene en CSV)
-                        None, None, None, None,    # almacenaje, origen, tipo, proveedor
-                        row["VERSION_ID"],
-                        row["CREATION_DATE"],
-                        row["LAST_UPDATE_DATE"],
-                        row["CREATED_BY"],
-                        row["LAST_UPDATED_BY"]
+                        row.get("P_INV_ORGANIZATION_ID"),
+                        row.get("INVENTORY_ITEM_ID"),
+                        row.get("ORGANIZATION_ID"),
+                        row.get("ORGANIZATION_CODE"),
+                        row.get("BUSINESS_UNIT_ID"),
+                        row.get("BUSINESS_UNIT_NAME"),
+                        row.get("LEGAL_ENTTITY_ID"),
+                        row.get("MASTER_ORG_ID"),
+                        row.get("ITEM_CLASS"),
+                        row.get("ITEM_NUMBER"),
+                        row.get("ITEM_DESCRIPTION"),
+                        None,  # long_description
+                        row.get("CATEGORY_NAME"),
+                        row.get("ITEM_STATUS"),
+                        row.get("ITEM_STATUS_NAME"),
+                        row.get("ITEM_STATUS_DESCRIPTION"),
+                        row.get("APPROVAL_STATUS"),
+                        row.get("PRIMARY_UOM_VAL"),
+                        None,  # secondary_uom
+                        row.get("DIMENSION_UOM"),
+                        row.get("WEIGHT_UOM"),
+                        row.get("VOLUME_UOM"),
+                        row.get("UNIT_WIDTH_QUANTITY"),
+                        row.get("UNIT_LENGTH_QUANTITY"),
+                        row.get("UNIT_HEIGHT_QUANTITY"),
+                        row.get("UNIT_WEIGTH_QUANTITY"),
+                        row.get("UNIT_VOLUME_QUANTITY"),
+                        row.get("PRIMARY_TRANSACTION_QUANTITY"),
+                        row.get("INVENTORY_ITEM_FLAG"),
+                        row.get("STOCK_ENABLED_FLAG"),
+                        row.get("CUSTOMER_ORDER_FLAG"),
+                        row.get("CUSTOMER_ORDER_ENABLED_FLAG"),
+                        row.get("SHIPPABLE_FLAG"),
+                        row.get("INVOICED_FLAG"),
+                        row.get("PURCHASING_ITEM_FLAG"),
+                        row.get("PURCHASING_ENABLED_FLAG"),
+                        None,  # purchasing_tax_code
+                        None,  # almacenaje
+                        None,  # origen
+                        None,  # tipo
+                        None,  # proveedor
+                        row.get("VERSION_ID"),
+                        row.get("CREATION_DATE"),
+                        row.get("LAST_UPDATE_DATE"),
+                        row.get("CREATED_BY"),
+                        row.get("LAST_UPDATED_BY")
                     ))
 
             sql = """
-            INSERT INTO inventory_ia.inv_items_raw (
+            INSERT INTO inv_items_raw (
                 request_id, job_id, source_file,
                 p_inv_organization_id, inventory_item_id, organization_id, organization_code,
                 business_unit_id, business_unit_name, legal_entity_id, master_org_id, item_class,

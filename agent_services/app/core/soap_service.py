@@ -292,7 +292,7 @@ def run_bulk_export(
     enterprise_id: int,  
     poll_interval: int = 10,   # segundos entre cada consulta de status  
     max_retries: int = 10,     # máximo de intentos antes de timeout  
-) -> Path:  
+) -> dict:  
     """  
     Ejecuta el flujo completo:  
       1. exportBulkData       → requestId  
@@ -325,4 +325,7 @@ def run_bulk_export(
     zip_path = download_ess_job_execution_details(enterprise_id, request_id)  
     print(f"\n[SOAP] ZIP guardado en: {zip_path.resolve()}\n\n")  
 
-    return zip_path
+    return {
+        "request_id": request_id,
+        "zip_path": zip_path
+    }
