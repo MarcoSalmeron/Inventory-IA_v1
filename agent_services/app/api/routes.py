@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate, ProcessConfig
 from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential, save_process_config, get_process_config
 from agent_services.app.core.soap_service import run_bulk_export  
+from agent_services.app.core.db_conn import create_analysis_run
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
 from agent_services.app.services.inventory_service import process_inventory_zip
@@ -78,10 +79,17 @@ def create_process_config(body: ProcessConfig):
 @router.post("/{enterprise_id}/bulk-export")  
 async def trigger_bulk_export(enterprise_id: int):  
     try:  
-        soap_result = run_bulk_export(enterprise_id)
-        job_id = get_process_config(enterprise_id)["enterprise_code"]
-        chunks = process_inventory_zip(soap_result["zip_path"], soap_result["request_id"], job_id)
-        return {"message": "Extraccion completada", "chunks": chunks}
+        soap_result = run_bulk_export(enterprise_id)  
+  
+        # registrar primer paso del pipeline (extraccion de inventario) ──  
+        create_analysis_run(  
+            request_id=soap_result["request_id"],  
+            status="EXTRACTING",  
+        )  
+  
+        job_id = get_process_config(enterprise_id)["enterprise_code"]  
+        chunks = process_inventory_zip(soap_result["zip_path"], soap_result["request_id"], job_id)  
+        return {"message": "Extraccion completada", "chunks": chunks}  
     except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
     

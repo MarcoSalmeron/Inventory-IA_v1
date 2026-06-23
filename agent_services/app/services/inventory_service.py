@@ -11,13 +11,13 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 try:
-    print(f'\n{"#"*30}\n---- INVENTORY SERVICE ----\n{"#"*30}\n')
+    print(f'\n{"#"*30}\n---- INVENTORY SERVICE  (Pipeline Completo)----\n{"#"*30}\n')
 
     DOWNLOAD_DIR = Path(os.getenv("SOAP_DOWNLOAD_DIR", "downloads"))
 
     if DOWNLOAD_DIR:
         print(f"\n{'='*30}\n-- Directorio de descarga encontrado --\n{'='*30}\n")
-        print(f"Directorio: {DOWNLOAD_DIR.resolve()}")
+        print(f"Directorio: {DOWNLOAD_DIR.resolve()}\n")
     else:
         raise Exception("Directorio de descarga no encontrado")
 

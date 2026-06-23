@@ -1,12 +1,12 @@
 from psycopg2.extras import execute_values
-from .db_conn import get_conn
+from .db_conn import get_conn, update_analysis_run_org
 import csv
 
 def insert_inv_items_raw(request_id, job_id, source_file, csv_path):
     """
     Inserta todas las filas del CSV Oracle en la tabla inv_items_raw.
     """
-    print(f"{'='*30}\n-- insert (inv_items_raw) --\n{'='*30}")
+    print(f"\n{'='*30}\n-- insert (inv_items_raw) --\n{'='*30}\n")
 
     try:
         conn = get_conn()
@@ -69,6 +69,19 @@ def insert_inv_items_raw(request_id, job_id, source_file, csv_path):
                         row.get("LAST_UPDATED_BY")
                     ))
 
+                if rows:
+                    first = rows[0]  # (request_id, job_id, source_file, p_inv_org_id, inv_item_id, org_id, org_code, bu_id, bu_name, ...)
+
+                    # Segundo paso del pipeline: actualizar la tabla de resultados de extraccion
+                    update_analysis_run_org(
+                        request_id=first[0],
+                        organization_id=first[3],    # P_INV_ORGANIZATION_ID
+                        organization_code=first[6],  # ORGANIZATION_CODE
+                        business_unit_id=first[7],   # BUSINESS_UNIT_ID
+                        business_unit_name=first[8], # BUSINESS_UNIT_NAME
+                        status="EXTRACTED",
+                    )
+
             sql = """
             INSERT INTO inv_items_raw (
                 request_id, job_id, source_file,
@@ -90,10 +103,10 @@ def insert_inv_items_raw(request_id, job_id, source_file, csv_path):
 
             execute_values(cur, sql, rows)
             conn.commit()
-            
+
     except Exception as ex:
         raise ex
-    
+
     finally:
         conn.close()
 
