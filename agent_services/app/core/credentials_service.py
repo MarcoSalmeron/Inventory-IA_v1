@@ -234,7 +234,7 @@ def save_process_config(
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO process_config (
+            INSERT INTO fnd_process_config (
                 process_code, inv_organization_id
             ) VALUES (%s, %s)
             """,
@@ -269,7 +269,7 @@ def get_process_config(process_code: str) -> dict | None:
                 attribute3,
                 attribute4,
                 attribute5
-            FROM process_config
+            FROM fnd_process_config
             WHERE LOWER(process_code) = %s
               AND is_active = TRUE
             LIMIT 1
@@ -329,7 +329,7 @@ def get_process_config(enterprise_id: int) -> dict | None:
         cur = conn.cursor()
         cur.execute("""
         SELECT c.process_code, e.ENTERPRISE_CODE, c.attribute1
-        FROM process_config c
+        FROM fnd_process_config c
         JOIN FND_ENTERPRISES e ON c.ENTERPRISE_ID = e.ENTERPRISE_ID
         WHERE e.ENTERPRISE_ID = %s
         AND c.is_active = TRUE

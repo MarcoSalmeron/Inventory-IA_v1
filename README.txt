@@ -781,7 +781,7 @@ CREATE TABLE FND_PROCESS_CONFIG (
 -- Insert de Process Config (Nombre Job)
 -- ============================================================
 
-INSERT INTO process_config
+INSERT INTO fnd_process_config
 (process_code, ENTERPRISE_ID, attribute1)
 VALUES
 ('/oracle/apps/ess/custom/Integration/INV/Catalogos/,INT_JOB_ALL_INV_ITEMS_EXTRACT', 1, 'ExtractFileType=ALL');
