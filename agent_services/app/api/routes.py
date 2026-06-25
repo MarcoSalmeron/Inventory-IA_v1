@@ -99,7 +99,7 @@ async def trigger_bulk_export(enterprise_id: int):
 # #################### #
 # --- RAG Services (Pipeline COMPLETO)--- #
 # #################### #
-@router.post('/{enterprise_id}/{producto}/analysis}')
+@router.post('/{enterprise_id}/{producto}/analysis')
 async def start_analysis(enterprise_id: int, producto: str):
     try:
         print(f'\n{"#"*30}\nAnalisis Orquestador\n{"#"*30}\n')
