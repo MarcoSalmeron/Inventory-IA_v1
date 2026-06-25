@@ -212,7 +212,7 @@ class InventoryEmbeddingsRAG:
         cur.close()
         print(f"\n[DB] {eliminados} embeddings eliminados para request_id={request_id}\n")
 
-    def cargar_inv_embeddings(self, chunks: list, request_id: str, job_id: int) -> int:
+    def cargar_inv_embeddings(self, chunks: list, request_id: str) -> int:
         """
         Normaliza, vectoriza y persiste en inv_embeddings.
 
