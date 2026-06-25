@@ -1,13 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate, ProcessConfig
 from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential, save_process_config, get_process_config
-from agent_services.app.core.soap_service import run_bulk_export  
+from agent_services.app.core.soap_service import run_bulk_export
+from agent_services.app.core.rag import InventoryEmbeddingsRAG
 from agent_services.app.core.db_conn import create_analysis_run
 from agent_services.app.api.v1.business_units import get_business_units
 from agent_services.app.api.v1.organizations import get_organizations
 from agent_services.app.services.inventory_service import process_inventory_zip
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
+
+rag = InventoryEmbeddingsRAG()
 
 # ################################# #
 # --- Oracle API REST Endpoints --- # 
@@ -73,7 +76,7 @@ def create_process_config(body: ProcessConfig):
     )
 
 # ##################### #
-# --- SOAP Services --- # 
+# --- SOAP Services (Solo extraccion y persistencia)--- #
 # ##################### #
 
 @router.post("/{enterprise_id}/bulk-export")  
@@ -94,5 +97,31 @@ async def trigger_bulk_export(enterprise_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     
 # #################### #
-# --- RAG Services --- # 
+# --- RAG Services (Pipeline COMPLETO)--- #
 # #################### #
+@router.post('/{enterprise_id}/{producto}/analysis}')
+async def start_analysis(enterprise_id: int, producto: str):
+    try:
+        print(f'\n{"#"*30}\nAnalisis Orquestador\n{"#"*30}\n')
+        print(f'\n{"#"*30}\n1.- Extraccion de Inventario\n{"#"*30}\n')
+
+        soap_result = run_bulk_export(enterprise_id)
+
+        create_analysis_run(
+            request_id=soap_result["request_id"],
+            status="EXTRACTING",
+        )
+
+        job_id = get_process_config(enterprise_id)["enterprise_code"]
+        chunks = process_inventory_zip(soap_result["zip_path"], soap_result["request_id"], job_id)
+
+        print(f'\n{"#" * 30}\n2.- Embeddings\n{"#" * 30}\n')
+        rag.cargar_inv_embeddings(chunks, soap_result["request_id"], job_id)
+
+        print(f'\n{"#" * 30}\n3.- Similitud (score ≥ 0.85)\n{"#" * 30}\n')
+        productos_similares = rag.buscar(producto, soap_result["request_id"])
+
+        rag.cerrar()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
