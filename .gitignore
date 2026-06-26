@@ -11,9 +11,8 @@ wheels/
 
 .env
 
-README.md
+README.md 
 
-# IDE
 # Ignorar configuraciones del editor
 .idea/
 
