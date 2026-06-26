@@ -12,3 +12,9 @@ wheels/
 .env
 
 README.md 
+
+# Ignorar configuraciones del editor
+.idea/
+
+# Ignorar los datos físicos de la base de datos PostgreSQL
+data/
