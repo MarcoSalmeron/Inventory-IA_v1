@@ -35,3 +35,9 @@ class ParameterConfig(BaseModel):
 class ProcessConfig(BaseModel):
   processCode: str
   parameters: ParameterConfig
+
+class AnalysisRequest(BaseModel):  
+    categoria: Optional[str] = "ALL"   # "ALL" o nombre de categoría  
+    umbral: Optional[float] = 0.85     # mínimo final_score para entrar al grupo  
+    top_k: Optional[int] = 10          # candidatos a recuperar por HNSW antes del umbral  
+    group_risk: Optional[str] = "medium"

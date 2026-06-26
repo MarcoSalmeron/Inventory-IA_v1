@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate, ProcessConfig
+from agent_services.app.models.schemas import  CredentialCreate, CredentialUpdate, ProcessConfig, AnalysisRequest
 from agent_services.app.core.credentials_service import save_credential, get_credential, update_credential, delete_credential, activate_credential, save_process_config, get_process_config
 from agent_services.app.core.soap_service import run_bulk_export
 from agent_services.app.core.rag import InventoryEmbeddingsRAG
@@ -157,6 +157,82 @@ async def start_analysis(enterprise_id: int, producto: str):
                 group_risk  = "medium",      # el LLM (propose_node) lo refinará después  
                 top_k       = 10,  
                 umbral      = 0.85,  
+            )  
+  
+            if candidatos:  
+                grupos_detectados += 1  
+                group_id += 1  
+  
+        update_analysis_run_kpis(request_id, groups_detected=grupos_detectados)  
+        update_analysis_run_status(request_id, "ANALYZED")  
+  
+        return {  
+            "request_id":       request_id,  
+            "items_total":      len(chunks),  
+            "items_embedded":   insertados,  
+            "groups_detected":  grupos_detectados,  
+        }  
+  
+    except Exception as e:  
+        # Registrar el error en inv_analysis_runs para poder reanudar  
+        if request_id:  
+            update_analysis_run_status(request_id, "ERROR")  
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post('/{enterprise_id}/analysis')  
+async def start_analysis_v2(enterprise_id: int, body: AnalysisRequest):  
+    request_id = None  
+    try:  
+        # ── FASE 1: EXTRACCIÓN ──────────────────────────────────────────────  
+        print(f'\n{"#"*30}\n1.- Extraccion de Inventario\n{"#"*30}\n')  
+  
+        soap_result = run_bulk_export(enterprise_id)  
+        request_id  = soap_result["request_id"]  
+  
+        create_analysis_run(request_id=request_id, status="EXTRACTING")  
+  
+        job_id = get_process_config(enterprise_id)["enterprise_code"]  
+        chunks = process_inventory_zip(soap_result["zip_path"], request_id, job_id)  
+  
+        # Actualizar KPI: total de ítems extraídos  
+        update_analysis_run_kpis(request_id, items_total=len(chunks))  
+  
+        # ── FASE 2: EMBEDDINGS ──────────────────────────────────────────────  
+        print(f'\n{"#"*30}\n2.- Embeddings\n{"#"*30}\n')  
+  
+        update_analysis_run_status(request_id, "EMBEDDING")  
+        insertados = rag.cargar_inv_embeddings(chunks, request_id, job_id)  
+        update_analysis_run_kpis(request_id, items_embedded=insertados)  
+        update_analysis_run_status(request_id, "EMBEDDED")  
+  
+        # ── FASE 3: ANÁLISIS SEMÁNTICO ──────────────────────────────────────  
+        # Iterar sobre los chunks filtrando por la categoría del parámetro `producto`.  
+        # Cada ítem actúa como anchor → buscar_y_persistir() encuentra su grupo  
+        # y lo persiste en inv_similarity_results con is_anchor + candidatos.  
+        print(f'\n{"#"*30}\n3.- Similitud (score >= 0.85)\n{"#"*30}\n')  
+  
+        update_analysis_run_status(request_id, "ANALYZING")  
+  
+        grupos_detectados = 0  
+        group_id = 1  
+
+        anchors = [  
+            c for c in chunks  
+            if body.categoria.upper() == "ALL"  
+            or body.categoria.upper() in (c["metadata"].get("CATEGORY_NAME") or "").upper()  
+        ]  
+        # usar body.umbral y body.top_k en buscar_y_persistir()
+        for chunk in anchors:  
+            meta = chunk["metadata"]  
+  
+            candidatos = rag.buscar_y_persistir(  
+                anchor      = meta,          # dict con ITEM_DESCRIPTION, CATEGORY_NAME, etc.  
+                request_id  = request_id,  
+                group_id    = group_id,  
+                group_label = f"Grupo {group_id} — {meta.get('CATEGORY_NAME', '')}",  
+                group_risk  = "medium",      # el LLM (propose_node) lo refinará después  
+                top_k       = body.top_k,  
+                umbral      = body.umbral,  
             )  
   
             if candidatos:  
